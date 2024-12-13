@@ -1,23 +1,25 @@
-import tkinter as tk
-from tkinter import messagebox, ttk
-from pymongo import MongoClient
+# 導入模組
+import tkinter as tk  # 引入 Tkinter 模組，建立 GUI
+from tkinter import messagebox, ttk  # 引入 Tkinter 的子模組，顯示提示框和表格
+from pymongo import MongoClient  # 引入 pymongo，與 MongoDB 交互
 
 # 連接 MongoDB 雲端資料庫
-client = MongoClient("mongodb+srv://cathy:G222442841@cluster0.3is10.mongodb.net")
-db = client['book_manager']  # 書籍管理資料庫
-collection = db['books']     # 書籍集合
+client = MongoClient("mongodb+srv://cathy:G222442841@cluster0.3is10.mongodb.net")  # 連接到 MongoDB 雲端
+db = client['book_manager']  # 指定使用資料庫'book_manager'
+collection = db['books']  # 指定要操作的集合'books'
 
+# 函式一：新增書籍功能
 def add_book():
     """新增書籍"""
-    title = title_entry.get()
-    author = author_entry.get()
-    tags = tags_entry.get().split(',') if tags_entry.get() else []  # Handle empty tags
-    status = status_entry.get() or '未讀'  # Default status if not specified
-    rating = rating_entry.get() or '未評分'  # Default rating if not specified
-    notes = notes_entry.get() or '無備註'  # Default notes if not specified
+    title = title_entry.get()  # 從輸入框中取得書名
+    author = author_entry.get()  # 從輸入框中取得作者
+    tags = tags_entry.get().split(',') if tags_entry.get() else []  # 若標籤不為空，分割成清單
+    status = status_entry.get() or '未讀'  # 若狀態未填，預設為 '未讀'
+    rating = rating_entry.get() or '未評分'  # 若評分未填，預設為 '未評分'
+    notes = notes_entry.get() or '無備註'  # 若筆記未填，預設為 '無備註'
 
-    if not title or not author:
-        messagebox.showwarning("警告", "請填寫完整的書籍資訊！")
+    if not title or not author:  # 檢查書名與作者是否已填寫
+        messagebox.showwarning("警告", "請填寫完整的書籍資訊！")  # 顯示警告框
         return
 
     book = {
@@ -27,51 +29,51 @@ def add_book():
         "status": status,
         "rating": rating,
         "notes": notes
-    }
-    collection.insert_one(book)
-    messagebox.showinfo("成功", f"書籍 '{title}' 已新增！")
-    clear_entries()
-    update_book_list()
+    }  # 構建書籍資料字典
+    collection.insert_one(book)  # 將書籍資料插入 MongoDB 集合
+    messagebox.showinfo("成功", f"書籍 '{title}' 已新增！")  # 顯示成功訊息
+    clear_entries()  # 清空輸入框
+    update_book_list()  # 更新書籍列表
 
+# 函式二：刪除書籍功能
 def delete_book():
     """刪除選定的書籍"""
-    selected_item = tree.selection()
-    
-    if not selected_item:
-        messagebox.showwarning("警告", "請選擇要刪除的書籍！")
+    selected_item = tree.selection()  # 取得表格中被選中的項目
+
+    if not selected_item:  # 如果未選擇任何項目
+        messagebox.showwarning("警告", "請選擇要刪除的書籍！")  # 顯示警告框
         return
 
-    # 取得選定行的書名
-    item = tree.item(selected_item)
+    item = tree.item(selected_item)  # 取得選定行的資料
     title = item["values"][1]  # 假設第二欄是書名
 
-    # 刪除資料庫中的記錄
-    result = collection.delete_one({"title": title})
+    result = collection.delete_one({"title": title})  # 從 MongoDB 集合中刪除該書籍
 
-    if result.deleted_count > 0:
-        messagebox.showinfo("成功", f"書籍 '{title}' 已刪除！")
-        update_book_list()
-    else:
-        messagebox.showwarning("失敗", f"未找到書籍 '{title}'，無法刪除。")
+    if result.deleted_count > 0:  # 若刪除成功
+        messagebox.showinfo("成功", f"書籍 '{title}' 已刪除！")  # 顯示成功訊息
+        update_book_list()  # 更新書籍列表
+    else:  # 若未找到書籍
+        messagebox.showwarning("失敗", f"未找到書籍 '{title}'，無法刪除。")  # 顯示失敗訊息
 
-
+# 函式三：清空輸入框
 def clear_entries():
     """清空輸入框"""
-    title_entry.delete(0, tk.END)
-    author_entry.delete(0, tk.END)
-    tags_entry.delete(0, tk.END)
-    status_entry.delete(0, tk.END)
-    rating_entry.delete(0, tk.END)
-    notes_entry.delete(0, tk.END)
+    title_entry.delete(0, tk.END)  # 清空書名輸入框
+    author_entry.delete(0, tk.END)  # 清空作者輸入框
+    tags_entry.delete(0, tk.END)  # 清空標籤輸入框
+    status_entry.delete(0, tk.END)  # 清空狀態輸入框
+    rating_entry.delete(0, tk.END)  # 清空評分輸入框
+    notes_entry.delete(0, tk.END)  # 清空筆記輸入框
 
+# 函式四：更新書籍列表
 def update_book_list(filters=None):
     """刷新書籍列表，根據條件篩選"""
-    for item in tree.get_children():
-        tree.delete(item)  # 清空表格
-    query = filters if filters else {}
-    books = collection.find(query)
+    for item in tree.get_children():  # 清空表格內容
+        tree.delete(item)
+    query = filters if filters else {}  # 使用篩選條件，若無則取全部
+    books = collection.find(query)  # 從 MongoDB 集合中查詢書籍
 
-    for i, book in enumerate(books, start=1):
+    for i, book in enumerate(books, start=1):  # 遍歷每本書
         tree.insert("", "end", values=(
             f"{i}",
             book.get('title', '未命名'),
@@ -80,46 +82,47 @@ def update_book_list(filters=None):
             book.get('status', '未知'),
             book.get('rating', '未知'),
             book.get('notes', '無備註')
-        ))
+        ))  # 將書籍資料插入表格
 
+# 函式五：多條件查詢書籍
 def query_books():
     """根據多條件篩選書籍"""
     filters = {}
     tags = tag_filter_entry.get().split(',') if tag_filter_entry.get() else None
     status = status_filter_entry.get()
     author = author_filter_entry.get()
-
     if tags:
         filters["tags"] = {"$all": tags}  # 必須包含所有標籤
     if status:
-        filters["status"] = status
+        filters["status"] = status  # 篩選狀態
     if author:
-        filters["author"] = author
+        filters["author"] = author  # 篩選作者
 
-    update_book_list(filters)
+    update_book_list(filters)  # 更新書籍列表
 
+# 函式六：重置篩選
 def reset_filters():
     """重置篩選條件，顯示所有書籍"""
     update_book_list()
 
-# GUI 設計
-app = tk.Tk()
-app.title("個人書籍管理系統")
+# GUI 介面設計
+app = tk.Tk()  # 創建主視窗
+app.title("個人書籍管理系統")  # 設定視窗標題
 
-# 輸入區
-input_frame = tk.LabelFrame(app, text="新增/刪除書籍", padx=10, pady=10)
+input_frame = tk.LabelFrame(app, text="新增/刪除書籍", padx=10, pady=10)  # 新增/刪除區域
 input_frame.pack(padx=10, pady=5, fill="x")
 
+# 輸入欄位與按鈕
 fields = ["書名：", "作者：", "標籤 (以逗號分隔)：", "狀態：", "評分：", "筆記："]
 entries = []
 
-for i, field in enumerate(fields):
+for i, field in enumerate(fields):  # 為每個欄位建立輸入框
     tk.Label(input_frame, text=field).grid(row=i, column=0, padx=10, pady=5)
     entry = tk.Entry(input_frame, width=50)
     entry.grid(row=i, column=1, padx=10, pady=5)
     entries.append(entry)
 
-title_entry, author_entry, tags_entry, status_entry, rating_entry, notes_entry = entries
+title_entry, author_entry, tags_entry, status_entry, rating_entry, notes_entry = entries  # 解包輸入框
 
 # 按鈕
 button_frame = tk.Frame(input_frame)
@@ -170,8 +173,6 @@ author_filter_entry.grid(row=2, column=1, padx=10, pady=5)
 tk.Button(query_frame, text="查詢", command=query_books).grid(row=3, column=0, columnspan=2, pady=10)
 tk.Button(query_frame, text="重置篩選", command=reset_filters).grid(row=3, column=2, columnspan=2, pady=10)
 
-# 初始化書籍列表
-update_book_list()
-
-# 運行應用
-app.mainloop()
+#主程序運行
+update_book_list() # 初始化書籍列表
+app.mainloop()  # 運行應用
